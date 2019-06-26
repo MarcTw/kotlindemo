@@ -1,0 +1,74 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+buildscript {
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.3.RELEASE")
+        classpath('se.transmode.gradle:gradle-docker:1.2')
+    }
+}
+plugins{
+    id 'org.springframework.boot' version '2.1.5.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
+    id 'org.jetbrains.kotlin.jvm' version '1.2.71'
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.2.71'
+    id 'org.jetbrains.kotlin.plugin.allopen' version '1.2.71'
+    id 'org.jetbrains.kotlin.kapt' version '1.2.71'
+    id 'org.jetbrains.kotlin.plugin.jpa' version '1.2.71'
+}
+apply plugin: 'docker'
+
+repositories {
+    mavenCentral()
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-mustache")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    compile("org.springframework.boot:spring-boot-starter-jdbc:2.1.5.RELEASE")
+    compile("mysql:mysql-connector-java:8.0.11")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    runtimeOnly("org.springframework.boot:spring-boot-devtools")
+    kapt("org.springframework.boot:spring-boot-configuration-processor")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testImplementation("com.ninja-squad:springmockk:1.1.2")
+
+}
+
+tasks.withType(KotlinCompile) {
+    kotlinOptions {
+        freeCompilerArgs = ["-Xjsr305=strict"]
+        jvmTarget = "1.8"
+    }
+}
+
+//tasks.withType<Test> {
+//    useJUnitPlatform()
+//}
+
+
+allOpen {
+    annotation("javax.persistence.Entity")
+    annotation("javax.persistence.Embeddable")
+    annotation("javax.persistence.MappedSuperclass")
+}
+
+task buildDocker(type: Docker, dependsOn: build) {
+    push = true
+    applicationName = bootJar.baseName
+    dockerfile = file('Dockerfile')
+    doFirst {
+        copy {
+            from jar
+            into stageDir
+        }
+    }
+}
